@@ -29,3 +29,11 @@ jobs:
           flutter test
           flutter build apk
           flutter build appbundle
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-artifacts
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
