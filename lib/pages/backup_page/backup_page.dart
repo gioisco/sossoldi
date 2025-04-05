@@ -1,8 +1,15 @@
+import 'dart:io' show File;
+
+import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:flutter/material.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' show join;
+import 'package:sqflite/sqflite.dart' show getDatabasesPath;
+
 import '../../database/sossoldi_database.dart';
 import '../../ui/device.dart';
+import '../../ui/widgets/alert_dialog.dart';
 import '../../utils/csv_file_picker.dart';
 import '../../utils/snack_bars/snack_bar.dart';
 
@@ -102,6 +109,42 @@ class _BackupPageState extends ConsumerState<BackupPage> {
     }
   }
 
+  Future<void> _handleDownloadDatabase() async {
+    try {
+      if (!mounted) return;
+
+      // Ottieni il path del database
+      final databasePath = await getDatabasesPath();
+      var filename = 'sossoldi.db';
+      final databaseFile = File(join(databasePath, filename));
+
+      String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      if (selectedDirectory == null) {
+        showErrorDialog(context, "Esportazione annullata: nessuna cartella selezionata.");
+        return;
+      }
+      CSVFilePicker.showLoading(context, 'Downloading database...');
+
+      final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      final String destinationPath = join(selectedDirectory, 'sossoldi_$timestamp.db');
+      await databaseFile.copy(destinationPath);
+
+      CSVFilePicker.hideLoading(context);
+      showSuccessDialog(context, "Database esportato con successo in $destinationPath");
+
+    } catch (e) {
+      if (!mounted) return;
+      CSVFilePicker.hideLoading(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Export failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+
   late final List<BackupOption> options = [
     BackupOption(
       title: 'Import data',
@@ -112,6 +155,11 @@ class _BackupPageState extends ConsumerState<BackupPage> {
       title: 'Export data',
       description: 'Save your data as a CSV file',
       icon: Icons.download,
+    ),
+    BackupOption(
+      title: "Download Database",
+      description: "Export DB as SQLite 3.x database file",
+      icon: Icons.download_for_offline,
     ),
   ];
 
@@ -184,8 +232,10 @@ class _BackupPageState extends ConsumerState<BackupPage> {
                               ],
                             ),
                           );
-                        } else {
+                        } else if (i == 1) {
                           _handleExport();
+                        } else {
+                          _handleDownloadDatabase();
                         }
                       },
                       child: Padding(
