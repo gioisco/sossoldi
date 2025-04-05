@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' show join;
+import 'package:permission_handler/permission_handler.dart';
 import 'package:sqflite/sqflite.dart' show getDatabasesPath;
 
 import '../../database/sossoldi_database.dart';
@@ -113,7 +114,12 @@ class _BackupPageState extends ConsumerState<BackupPage> {
     try {
       if (!mounted) return;
 
-      // Ottieni il path del database
+      await requestStoragePermissions();
+      if (!await Permission.manageExternalStorage.isGranted) {
+        showErrorDialog(context, "I permessi per l'accesso alla memoria sono necessari per esportare il database.");
+        return;
+      }
+
       final databasePath = await getDatabasesPath();
       var filename = 'sossoldi.db';
       final databaseFile = File(join(databasePath, filename));
@@ -143,6 +149,23 @@ class _BackupPageState extends ConsumerState<BackupPage> {
       );
     }
   }
+
+  Future<void>  requestStoragePermissions() async {
+    // Richiede il permesso di scrittura sulla memoria esterna
+    if (await Permission.storage.request().isGranted) {
+      print("Permesso di scrittura concesso.");
+    } else {
+      print("Permesso di scrittura negato.");
+    }
+
+    // Per Android 11 e successivi, potrebbe essere necessario richiedere il permesso di gestione completa
+    if (await Permission.manageExternalStorage.request().isGranted) {
+      print("Permesso di gestione completa della memoria esterna concesso.");
+    } else {
+      print("Permesso di gestione completa della memoria esterna negato.");
+    }
+  }
+
 
 
   late final List<BackupOption> options = [
