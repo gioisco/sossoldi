@@ -83,6 +83,7 @@ class _BackupPageState extends ConsumerState<BackupPage> {
     }
   }
 
+  bool _isShareEnabled = false;
   Future<void> _handleExport() async {
     try {
       CSVFilePicker.showLoading(context, 'Exporting data...');
@@ -92,7 +93,7 @@ class _BackupPageState extends ConsumerState<BackupPage> {
       if (!mounted) return;
       CSVFilePicker.hideLoading(context);
 
-      await CSVFilePicker.saveCSVFile(csv, context);
+      await CSVFilePicker.saveCSVFile(csv, context, isShare: _isShareEnabled);
     } catch (e) {
       if (!mounted) return;
       CSVFilePicker.hideLoading(context);
@@ -150,6 +151,17 @@ class _BackupPageState extends ConsumerState<BackupPage> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
+              SwitchListTile(
+                title: Text('Condividi invece di salvare'),
+                subtitle: Text('Se attivo, il file verrà condiviso anziché salvato localmente'),
+                value: _isShareEnabled,
+                onChanged: (value) {
+                  setState(() {
+                    _isShareEnabled = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
               ListView.separated(
                 itemCount: options.length,
                 shrinkWrap: true,

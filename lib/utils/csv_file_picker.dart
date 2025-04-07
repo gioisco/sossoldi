@@ -57,16 +57,32 @@ class CSVFilePicker {
   }
 
   // Share exported CSV file
-  static Future<void> saveCSVFile(String csv, BuildContext context) async {
+  static Future<void> saveCSVFile(
+      String csv,
+      BuildContext context,
+      {required bool isShare}
+      ) async {
     try {
+      if (isShare) {
+        final dir = await getTemporaryDirectory();
+        final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+        final file = File('${dir.path}/sossoldi_export_$timestamp.csv');
+        await file.writeAsString(csv);
 
-      final dir = await getTemporaryDirectory();
-      final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-      final file = File('${dir.path}/sossoldi_export_$timestamp.csv');
-      await file.writeAsString(csv);
+        await Share.shareXFiles([XFile(file.path)]);
+      } else {
+        String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+        if (selectedDirectory == null) return;
 
-      await Share.shareXFiles([XFile(file.path)]);
+        final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+        final String filePath = join(selectedDirectory, 'sossoldi_export_$timestamp.csv');
 
+        final file = await File(filePath).writeAsString(csv);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File salvato in: ${file.path}'), backgroundColor: Colors.green),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
