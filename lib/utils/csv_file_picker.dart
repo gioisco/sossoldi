@@ -2,8 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart' show getTemporaryDirectory;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:share_plus/share_plus.dart';
 
 class CSVFilePicker {
   // Request storage permission based on Android version
@@ -57,27 +59,14 @@ class CSVFilePicker {
   // Share exported CSV file
   static Future<void> saveCSVFile(String csv, BuildContext context) async {
     try {
-      // Prompt the user to select a directory
-      String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
-      if (selectedDirectory == null) {
-        // User canceled the picker
-        return;
-      }
 
+      final dir = await getTemporaryDirectory();
       final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-      final String filePath =
-          join(selectedDirectory, 'sossoldi_export_$timestamp.csv');
+      final file = File('${dir.path}/sossoldi_export_$timestamp.csv');
+      await file.writeAsString(csv);
 
-      // Write the CSV content directly to the file
-      final file = await File(filePath).writeAsString(csv);
+      await Share.shareXFiles([XFile(file.path)]);
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('File saved to: ${file.path}'),
-          backgroundColor: Colors.green,
-        ),
-      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
