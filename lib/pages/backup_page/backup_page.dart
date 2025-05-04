@@ -1,4 +1,4 @@
-import 'dart:io' show File;
+import 'dart:io' show File, Platform;
 
 import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:flutter/material.dart';
@@ -114,10 +114,14 @@ class _BackupPageState extends ConsumerState<BackupPage> {
     try {
       if (!mounted) return;
 
-      await requestStoragePermissions();
-      if (!await Permission.manageExternalStorage.isGranted) {
-        showErrorDialog(context, "I permessi per l'accesso alla memoria sono necessari per esportare il database.");
-        return;
+      if (Platform.isAndroid) {
+        await requestStoragePermissions();
+
+        if (!await Permission.manageExternalStorage.isGranted) {
+          showErrorDialog(context,
+              "I permessi per l'accesso alla memoria sono necessari per esportare il database.");
+          return;
+        }
       }
 
       final databasePath = await getDatabasesPath();
