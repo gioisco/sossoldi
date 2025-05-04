@@ -1,11 +1,12 @@
 import 'dart:io' show File, Platform;
 
-import 'package:file_picker/file_picker.dart' show FilePicker;
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' show join;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart' show getDatabasesPath;
 
 import '../../database/sossoldi_database.dart';
@@ -128,11 +129,18 @@ class _BackupPageState extends ConsumerState<BackupPage> {
       var filename = 'sossoldi.db';
       final databaseFile = File(join(databasePath, filename));
 
-      String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      final prefs = await SharedPreferences.getInstance();
+      final String? lastDir = prefs.getString('last_dir');
+      String? selectedDirectory = await getDirectoryPath(
+        initialDirectory: lastDir,
+        confirmButtonText: 'Select this directory',
+      );
+
       if (selectedDirectory == null) {
         showErrorDialog(context, "Esportazione annullata: nessuna cartella selezionata.");
         return;
       }
+      await prefs.setString('last_dir', selectedDirectory);
       CSVFilePicker.showLoading(context, 'Downloading database...');
 
       final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
